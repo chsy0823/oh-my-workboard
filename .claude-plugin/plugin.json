@@ -1,0 +1,12 @@
+{
+  "name": "oh-my-workboard",
+  "description": "Team workboard for Claude Code — per-member task boards, reviews, blockers, and dailies shared across a team via a central git repo.",
+  "version": "0.1.0",
+  "author": {
+    "name": "chsy0823"
+  },
+  "homepage": "https://github.com/chsy0823/oh-my-workboard",
+  "repository": "https://github.com/chsy0823/oh-my-workboard",
+  "license": "MIT",
+  "keywords": ["workboard", "team", "task-management", "daily", "standup"]
+}

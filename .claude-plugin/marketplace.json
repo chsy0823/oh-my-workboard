@@ -1,0 +1,17 @@
+{
+  "name": "workboard",
+  "owner": {
+    "name": "chsy0823"
+  },
+  "metadata": {
+    "description": "Distribution for the oh-my-workboard plugin",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "oh-my-workboard",
+      "source": "./",
+      "description": "Team workboard — per-member task boards, reviews, blockers, and dailies shared via git."
+    }
+  ]
+}
