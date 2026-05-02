@@ -1,0 +1,14 @@
+leader: LEADER_ID
+members:
+  - id: LEADER_ID
+    name: Leader Name
+    keywords: [leader_keyword]
+    role: Team Lead
+    slack_id: U000000000
+    active: true
+  - id: member1
+    name: Member One
+    keywords: [member1_keyword]
+    role: Member Role
+    slack_id: U000000001
+    active: true

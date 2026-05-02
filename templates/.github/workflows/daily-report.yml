@@ -1,0 +1,34 @@
+name: Daily Report
+
+on:
+  schedule:
+    # KST 09:00 = UTC 00:00 (Mon–Fri). Override TZ + cron if your team isn't in KST.
+    - cron: '0 0 * * 1-5'
+  workflow_dispatch:
+
+env:
+  TZ: Asia/Seoul
+  # {{SLACK_ID_BLOCK}} — rendered by /oh-my-workboard:init from team.yaml.
+  SLACK_ID_PLACEHOLDER: U000000000
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build report payload
+        run: node scripts/daily-report.js --blocks > /tmp/daily-report.json
+
+      - name: Send to Slack
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          curl -s -X POST "$SLACK_WEBHOOK_URL" \
+            -H 'Content-Type: application/json' \
+            --data-binary @/tmp/daily-report.json

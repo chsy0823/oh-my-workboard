@@ -1,0 +1,98 @@
+name: Slack Notification
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'people/**'
+      - 'board/**'
+      - 'projects/**'
+      - 'log/**'
+
+# {{SLACK_ID_BLOCK}} — rendered by /oh-my-workboard:init from team.yaml.
+# Each active member with a slack_id becomes SLACK_ID_{id-with-dashes-as-underscores}.
+env:
+  SLACK_ID_PLACEHOLDER: U000000000
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build notification
+        id: build
+        run: |
+          BEFORE="${{ github.event.before }}"
+          AFTER="${{ github.sha }}"
+          if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ] \
+             || ! git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+            RANGE="HEAD~1..HEAD"
+          else
+            RANGE="${BEFORE}..${AFTER}"
+          fi
+
+          COMMIT_COUNT=$(git rev-list --count "$RANGE" 2>/dev/null || echo "1")
+          AUTHOR=$(git log -1 --format='%an' "$AFTER")
+          LAST_MSG=$(git log -1 --format='%s' "$AFTER")
+          if [ "$COMMIT_COUNT" -gt 1 ]; then
+            MSG="${LAST_MSG} (+${COMMIT_COUNT} commits)"
+          else
+            MSG="$LAST_MSG"
+          fi
+          COMMIT_URL="https://github.com/${{ github.repository }}/commit/${{ github.sha }}"
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+
+          CHANGED=$(git diff --name-only $RANGE 2>/dev/null || echo "")
+          PEOPLE_CHANGES=$(echo "$CHANGED" | grep '^people/' | sed 's|people/||;s|\.md||' || true)
+          REQUEST_CHANGES=$(echo "$CHANGED" | grep '^board/requests' || true)
+          BLOCKER_CHANGES=$(echo "$CHANGED" | grep '^board/blockers' || true)
+          PROJECT_CHANGES=$(echo "$CHANGED" | grep '^projects/' || true)
+          LOG_CHANGES=$(echo "$CHANGED" | grep '^log/' || true)
+
+          SUMMARY=""
+          [ -n "$PEOPLE_CHANGES" ] && SUMMARY="${SUMMARY}\n:pencil: *Workboard updates:* $(echo "$PEOPLE_CHANGES" | tr '\n' ', ' | sed 's/,$//')"
+          [ -n "$REQUEST_CHANGES" ] && SUMMARY="${SUMMARY}\n:eyes: *Request queue changed*"
+          [ -n "$BLOCKER_CHANGES" ] && SUMMARY="${SUMMARY}\n:rotating_light: *Blockers changed*"
+          [ -n "$PROJECT_CHANGES" ] && SUMMARY="${SUMMARY}\n:milestone: *Project files updated*"
+          [ -n "$LOG_CHANGES" ] && SUMMARY="${SUMMARY}\n:spiral_note_pad: *Daily log added*"
+
+          {
+            echo "AUTHOR=${AUTHOR}"
+            echo "MSG=${MSG}"
+            echo "COMMIT_URL=${COMMIT_URL}"
+            echo "SHORT_SHA=${SHORT_SHA}"
+            echo "SUMMARY<<EOFSUM"
+            echo -e "$SUMMARY"
+            echo "EOFSUM"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Send to Slack
+        if: steps.build.outputs.SUMMARY != ''
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          PAYLOAD=$(cat <<JSON
+          {
+            "blocks": [
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "*Workboard Update*\n\`${{ steps.build.outputs.MSG }}\`\nby *${{ steps.build.outputs.AUTHOR }}* (<${{ steps.build.outputs.COMMIT_URL }}|${{ steps.build.outputs.SHORT_SHA }}>)"
+                }
+              },
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "${{ steps.build.outputs.SUMMARY }}"
+                }
+              }
+            ]
+          }
+          JSON
+          )
+          curl -s -X POST "$SLACK_WEBHOOK_URL" -H 'Content-Type: application/json' -d "$PAYLOAD"

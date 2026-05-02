@@ -1,0 +1,9 @@
+.DS_Store
+*.swp
+*.swo
+*~
+node_modules/
+package-lock.json
+dashboard/test*.png
+dashboard/test*.mjs
+.obsidian/

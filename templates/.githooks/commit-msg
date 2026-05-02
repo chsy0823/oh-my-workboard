@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Enforce commit message prefix: [me] [log] [board] [project] [decision] [init]
+
+MSG_FILE="$1"
+MSG="$(cat "$MSG_FILE")"
+
+if ! echo "$MSG" | grep -qE '^\[(me|log|board|project|decision|init)\]'; then
+  echo "ERROR: Commit message must start with one of: [me] [log] [board] [project] [decision] [init]" >&2
+  echo "Got: $MSG" >&2
+  exit 1
+fi
+
+exit 0

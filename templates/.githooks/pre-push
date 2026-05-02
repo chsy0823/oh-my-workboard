@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# Leader bypass for pre-push — non-leaders cannot push to main directly.
+
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+TEAM_YAML="$REPO_ROOT/.workboard/team.yaml"
+CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main")"
+GIT_USER="$(git config user.name 2>/dev/null || echo "")"
+USER_LOWER="$(echo "$GIT_USER" | tr '[:upper:]' '[:lower:]')"
+
+# Only enforce on main branch
+if [[ "$CURRENT_BRANCH" != "main" ]]; then
+  exit 0
+fi
+
+if [[ ! -f "$TEAM_YAML" ]]; then
+  exit 0
+fi
+
+if command -v yq &>/dev/null; then
+  LEADER="$(yq e '.leader' "$TEAM_YAML" 2>/dev/null || echo "")"
+  MATCH="$(yq e "
+    .members[] |
+    select(.id == \"$LEADER\") |
+    select(
+      (.id | ascii_downcase | test(\"$USER_LOWER\")) or
+      (.name | ascii_downcase | test(\"$USER_LOWER\")) or
+      ((.keywords // []) | .[] | ascii_downcase | test(\"$USER_LOWER\"))
+    ) | \"yes\"
+  " "$TEAM_YAML" 2>/dev/null | head -1 || echo "")"
+else
+  LEADER="$(grep -E '^leader:' "$TEAM_YAML" | awk '{print $2}' | tr -d '"' | head -1 || echo "")"
+  MATCH=""
+  in_leader=false
+  while IFS= read -r line; do
+    if echo "$line" | grep -qE "^\s+-\s+id:\s*['\"]?${LEADER}['\"]?"; then
+      in_leader=true
+    elif echo "$line" | grep -qE "^\s+-\s+id:" && $in_leader; then
+      in_leader=false
+    fi
+    if $in_leader && echo "$line" | tr '[:upper:]' '[:lower:]' | grep -q "$USER_LOWER"; then
+      MATCH="yes"; break
+    fi
+  done < "$TEAM_YAML"
+fi
+
+if [[ "$MATCH" != "yes" ]]; then
+  echo "BLOCK: Only the team leader can push directly to main. Create a branch and open a PR." >&2
+  exit 1
+fi
+
+exit 0
