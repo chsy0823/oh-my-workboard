@@ -18,7 +18,7 @@ Show the leader these numbers in one block, then wait for "OK":
    - Stale ping-pongs in `requests.md` (4+ days): N
    - Past-due requests: N
    - Open blockers (`board/blockers.md` + `@block` leaves): N
-6. **Velocity trend**: last 4 weeks moving average from `board/velocity.md`.
+6. **Velocity trend**: parse `board/velocity.md` via `parseVelocity()` and `computeVelocityTrend(rows, 4)` from `dashboard/lib/parser.js`. Show: latest week pct, 4-week avg, delta vs previous week (▲/▼), delta vs 4-week avg, and the `recent` rows table. One-line summary: "this week {pct}% vs 4wk avg {avgPct}% — trending up/down/flat" (use `deltaVsAvg` sign).
 
 Ask: "Numbers look right? Any extra slice you want before retro?". Wait for OK.
 

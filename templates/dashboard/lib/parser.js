@@ -377,15 +377,52 @@ function parseTeamPlan(filePath) {
   return { goals, focuses };
 }
 
+// Parse board/velocity.md.
+// Row format: `| W{N} | {planned} | {done} | {pct}% | {note} |`
+// Header / separator / blank rows are skipped. Malformed rows are ignored.
 function parseVelocity(filePath) {
   const content = fs.readFileSync(filePath, 'utf-8');
-  const lines = content.split('\n');
   const rows = [];
-  for (const line of lines) {
-    const m = line.match(/^\|\s*(W\d+)\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|\s*(\d+)%?\s*\|\s*(.*?)\s*\|\s*$/);
-    if (m) rows.push({ week: m[1], planned: +m[2], done: +m[3], pct: +m[4], note: m[5] });
+  for (const raw of content.split('\n')) {
+    const line = raw.trim();
+    if (!line.startsWith('|')) continue;
+    const cells = line.split('|').map(c => c.trim()).filter(c => c.length > 0);
+    if (cells.length < 4) continue;
+    if (/^-+$/.test(cells[0])) continue;
+    const wkMatch = cells[0].match(/^W(\d+)$/);
+    if (!wkMatch) continue;
+    const planned = parseInt(cells[1], 10);
+    const done = parseInt(cells[2], 10);
+    const pctMatch = cells[3].match(/(-?\d+)/);
+    if (Number.isNaN(planned) || Number.isNaN(done) || !pctMatch) continue;
+    rows.push({
+      week: parseInt(wkMatch[1], 10),
+      planned,
+      done,
+      pct: parseInt(pctMatch[1], 10),
+      note: cells[4] || '',
+    });
   }
+  rows.sort((a, b) => a.week - b.week);
   return rows;
+}
+
+// Compute trend over the last `lookback` weeks: average pct, delta vs previous, delta vs avg.
+function computeVelocityTrend(rows, lookback = 4) {
+  if (!rows || rows.length === 0) {
+    return { recent: [], avgPct: null, latest: null, deltaVsAvg: null, deltaVsPrev: null };
+  }
+  const recent = rows.slice(-lookback);
+  const latest = rows[rows.length - 1];
+  const avgPct = Math.round(recent.reduce((a, r) => a + r.pct, 0) / recent.length);
+  const prev = rows.length >= 2 ? rows[rows.length - 2] : null;
+  return {
+    recent,
+    avgPct,
+    latest,
+    deltaVsAvg: latest.pct - avgPct,
+    deltaVsPrev: prev ? latest.pct - prev.pct : null,
+  };
 }
 
 function computeTeamGoalProgress(teamPlan, milestones) {
@@ -473,5 +510,5 @@ function parseAll(rootDir) {
 module.exports = {
   parseAll, parsePerson, parseStreams, parseMilestones,
   parseRequests, parseBacklog, parseTeamPlan, parseVelocity,
-  computeTeamGoalProgress,
+  computeTeamGoalProgress, computeVelocityTrend,
 };
