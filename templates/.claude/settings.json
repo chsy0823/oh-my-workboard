@@ -18,6 +18,11 @@
         "hooks": [
           {
             "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/lint-workboard.sh\"",
+            "timeout": 10000
+          },
+          {
+            "type": "command",
             "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/remind-commit.sh\"",
             "timeout": 5000
           }

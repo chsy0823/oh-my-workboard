@@ -1,0 +1,32 @@
+name: Lint Workboard
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'people/**'
+      - 'board/**'
+      - 'projects/**/milestones.md'
+      - 'scripts/lint-workboard.js'
+      - 'dashboard/lib/parser.js'
+  pull_request:
+    paths:
+      - 'people/**'
+      - 'board/**'
+      - 'projects/**/milestones.md'
+      - 'scripts/lint-workboard.js'
+      - 'dashboard/lib/parser.js'
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run workboard lint
+        run: node scripts/lint-workboard.js --errors-only
