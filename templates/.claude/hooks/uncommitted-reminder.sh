@@ -10,9 +10,15 @@ PROJECT_DIR="${CLAUDE_PROJECT_DIR:-}"
 [ -z "$PROJECT_DIR" ] && exit 0
 [ ! -d "$PROJECT_DIR/.git" ] && exit 0
 
-# Toggle gate — only fire when the user opted in.
-WORKBOARD_JSON="$HOME/.claude/workboard.json"
-if [ ! -f "$WORKBOARD_JSON" ]; then
+# Toggle gate — resolve workboard config (local wins over global), then check the flag.
+PROJECT_ROOT_CFG="$(git -C "$PROJECT_DIR" rev-parse --show-toplevel 2>/dev/null || echo "$PROJECT_DIR")"
+LOCAL_JSON="$PROJECT_ROOT_CFG/.workboard.json"
+GLOBAL_JSON="$HOME/.claude/workboard.json"
+if [ -f "$LOCAL_JSON" ]; then
+  WORKBOARD_JSON="$LOCAL_JSON"
+elif [ -f "$GLOBAL_JSON" ]; then
+  WORKBOARD_JSON="$GLOBAL_JSON"
+else
   exit 0
 fi
 ENABLED="false"

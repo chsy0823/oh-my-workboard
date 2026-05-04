@@ -4,7 +4,7 @@ Append a free-form note bullet under a matched `@today` leaf.
 
 ## Execution
 
-1. Read `~/.claude/workboard.json`. Halt if missing.
+1. Resolve workboard config: prefer `<project-root>/.workboard.json` (project-root = `git rev-parse --show-toplevel`), fall back to `~/.claude/workboard.json`. Halt if neither exists.
 2. Capture cwd context: repo name, branch, recent commit subject (for note auto-suggestion).
 3. `cd` to `path`. Read `people/{id}.md`.
 4. Match an `@today` leaf to the current repo (same algorithm as `/done`). If 0 / 2+, ask.

@@ -20,13 +20,34 @@ const { parseAll } = require('../dashboard/lib/parser');
 const ROOT = path.resolve(__dirname, '..');
 
 // ── Toggle gate ───────────────────────────────────────────
-function isEnabled() {
+// Resolve workboard config: local (<git-root>/.workboard.json) wins over global.
+function loadConfig() {
+  const { execSync } = require('node:child_process');
+  let projectRoot;
   try {
-    const cfg = JSON.parse(fs.readFileSync(path.join(os.homedir(), '.claude', 'workboard.json'), 'utf-8'));
-    return cfg.session_brief === true;
+    projectRoot = execSync('git rev-parse --show-toplevel', {
+      encoding: 'utf-8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
   } catch {
-    return false;
+    projectRoot = process.cwd();
   }
+  const candidates = [
+    path.join(projectRoot, '.workboard.json'),
+    path.join(os.homedir(), '.claude', 'workboard.json'),
+  ];
+  for (const file of candidates) {
+    try {
+      return JSON.parse(fs.readFileSync(file, 'utf-8'));
+    } catch {
+      // try next
+    }
+  }
+  return null;
+}
+function isEnabled() {
+  const cfg = loadConfig();
+  return !!(cfg && cfg.session_brief === true);
 }
 if (!isEnabled()) process.exit(0);
 

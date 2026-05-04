@@ -16,8 +16,17 @@ set -u
 TARGET="${1:-}"
 [ -z "$TARGET" ] && exit 0
 
-WORKBOARD_JSON="$HOME/.claude/workboard.json"
-[ ! -f "$WORKBOARD_JSON" ] && exit 0
+# Resolve workboard config: local (project root .workboard.json) wins over global.
+PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || echo "$PWD")"
+LOCAL_JSON="$PROJECT_ROOT/.workboard.json"
+GLOBAL_JSON="$HOME/.claude/workboard.json"
+if [ -f "$LOCAL_JSON" ]; then
+  WORKBOARD_JSON="$LOCAL_JSON"
+elif [ -f "$GLOBAL_JSON" ]; then
+  WORKBOARD_JSON="$GLOBAL_JSON"
+else
+  exit 0
+fi
 
 # Resolve task repo path. Prefer jq; fall back to grep+sed.
 WB_PATH=""

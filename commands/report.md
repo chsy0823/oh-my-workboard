@@ -4,7 +4,7 @@ Render the daily report locally for preview (no Slack post).
 
 ## Execution
 
-1. Read `~/.claude/workboard.json`. Halt if missing.
+1. Resolve workboard config: prefer `<project-root>/.workboard.json` (project-root = `git rev-parse --show-toplevel`), fall back to `~/.claude/workboard.json`. Halt if neither exists.
 2. `cd` to `path`. Run `node scripts/daily-report.js --text`. Print the output verbatim.
 3. `cd` back to original cwd.
 

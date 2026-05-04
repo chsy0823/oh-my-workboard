@@ -4,8 +4,9 @@ Print the configured workboard location and current settings.
 
 ## Execution
 
-1. Read `~/.claude/workboard.json`. If missing, print "Workboard not configured. Run `/oh-my-workboard:init` first."
+1. Resolve workboard config: prefer `<project-root>/.workboard.json` (project-root = `git rev-parse --show-toplevel`), fall back to `~/.claude/workboard.json`. If neither exists, print "Workboard not configured. Run `/oh-my-workboard:init` first."
 2. Print:
+   - `source`: `local: {full-path-to-config}` (project-root .workboard.json) OR `global: ~/.claude/workboard.json`
    - `mode`: solo | team
    - `path`: absolute path to the task repo
    - `remote`: GitHub `owner/repo` if set, else "(none)"

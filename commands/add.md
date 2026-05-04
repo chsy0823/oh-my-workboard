@@ -4,7 +4,7 @@ Add a new top-level leaf to the current week's workboard tree, with project labe
 
 ## Execution
 
-1. Read `~/.claude/workboard.json`. Halt if missing.
+1. Resolve workboard config: prefer `<project-root>/.workboard.json` (project-root = `git rev-parse --show-toplevel`), fall back to `~/.claude/workboard.json`. Halt if neither exists.
 2. Capture cwd: repo name → candidate `[project]` label.
 3. `cd` to `path`. Read `people/{id}.md`.
 4. Auto-detect project label:

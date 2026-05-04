@@ -4,7 +4,7 @@ Record a cross-member request (review / work / decision / handoff) into the task
 
 ## Execution
 
-1. Read `~/.claude/workboard.json`. Halt if missing.
+1. Resolve workboard config: prefer `<project-root>/.workboard.json` (project-root = `git rev-parse --show-toplevel`), fall back to `~/.claude/workboard.json`. Halt if neither exists.
 2. Capture cwd git context (do NOT cd yet):
    - Repo name (basename of `git rev-parse --show-toplevel`)
    - Current branch

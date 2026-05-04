@@ -94,7 +94,16 @@ Categories: `## PR Reviews`, `## Design Reviews`, `## Work Requests`, `## Decisi
 
 Markdown table appended once per week by `/wrap-week`.
 
-## User config — `~/.claude/workboard.json`
+## User config — workboard.json (cascading: local → global)
+
+Two file locations, resolved in order:
+
+1. **Local**: `<project-root>/.workboard.json` (project-root = `git rev-parse --show-toplevel` of cwd; falls back to `$PWD`)
+2. **Global**: `~/.claude/workboard.json`
+
+If a local file exists, it **replaces** the global wholesale (no merge in v0.1). If neither exists, every command halts with "Workboard not configured. Run `/oh-my-workboard:init` first."
+
+Both files share the same schema:
 
 ```json
 {
@@ -108,6 +117,8 @@ Markdown table appended once per week by `/wrap-week`.
 ```
 
 `mode` ∈ {`solo`, `team`}. `remote` optional. The three boolean flags are session-intervention opt-ins, **default off**.
+
+`/oh-my-workboard:init --scope local` writes the local file at the cwd's project root; `--scope global` (default) writes the global file. `/oh-my-workboard:where` prints which file was resolved.
 
 ## Phases
 

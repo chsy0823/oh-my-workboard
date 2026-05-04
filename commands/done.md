@@ -4,7 +4,7 @@ Mark an `@today` leaf done with auto-generated context from the current cwd's gi
 
 ## Execution
 
-1. Read `~/.claude/workboard.json`. Halt if missing.
+1. Resolve workboard config: prefer `<project-root>/.workboard.json` (project-root = `git rev-parse --show-toplevel`), fall back to `~/.claude/workboard.json`. Halt if neither exists.
 2. Capture cwd context: repo name, branch, last 1–3 commit subjects, PR if any.
 3. `cd` to `path`. Read `people/{id}.md` (resolve user via `git config user.name` + `team.yaml`).
 4. Find candidate leaves: tree leaves with `@today` whose `[project]` label matches the current repo (or whose top-level ancestor's project matches).

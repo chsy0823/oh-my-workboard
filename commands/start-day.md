@@ -4,7 +4,7 @@ Cross-cwd entry point for the workboard's `/start-day` ritual. Resolves the task
 
 ## Execution
 
-1. Read `~/.claude/workboard.json`. If missing, halt with: "Workboard not configured. Run `/oh-my-workboard:init` first."
+1. Resolve workboard config: prefer `<project-root>/.workboard.json` (project-root = `git rev-parse --show-toplevel`), fall back to `~/.claude/workboard.json`. If neither exists, halt with: "Workboard not configured. Run `/oh-my-workboard:init` first."
 2. Extract `path`. If empty or invalid, halt with the same guidance.
 3. Remember the original cwd.
 4. `cd` into `path`.

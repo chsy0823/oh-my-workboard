@@ -4,7 +4,7 @@ Cross-cwd entry point for the team weekly plan ritual. **Leader only** — gated
 
 ## Execution
 
-1. Read `~/.claude/workboard.json`. Halt if missing.
+1. Resolve workboard config: prefer `<project-root>/.workboard.json` (project-root = `git rev-parse --show-toplevel`), fall back to `~/.claude/workboard.json`. Halt if neither exists.
 2. Extract `path`. Halt if empty.
 3. Remember original cwd; `cd` into `path`.
 4. Resolve current user via `git config user.name` against `.workboard/team.yaml`. If user is not the leader, halt with explanation.

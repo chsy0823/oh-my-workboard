@@ -4,7 +4,7 @@ Capture a blocker on a workboard leaf, choosing the right channel for the depend
 
 ## Execution
 
-1. Read `~/.claude/workboard.json`. Halt if missing.
+1. Resolve workboard config: prefer `<project-root>/.workboard.json` (project-root = `git rev-parse --show-toplevel`), fall back to `~/.claude/workboard.json`. Halt if neither exists.
 2. Capture cwd context: repo, branch, error context the user mentioned.
 3. Ask the user the **scope** of the blocker:
    - **External** (regulator, vendor, customer, external system, self-precondition) → `@wait(reason)` on the matched workboard leaf. **Never** include a `user:` field.

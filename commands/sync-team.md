@@ -4,7 +4,7 @@ Re-render derived files from `.workboard/team.yaml`. Run after editing team memb
 
 ## Execution
 
-1. Read `~/.claude/workboard.json`. Halt if missing.
+1. Resolve workboard config: prefer `<project-root>/.workboard.json` (project-root = `git rev-parse --show-toplevel`), fall back to `~/.claude/workboard.json`. Halt if neither exists.
 2. `cd` to `path`. Read `.workboard/team.yaml`.
 3. Re-render:
    - `CLAUDE.md` team table block (between `<!-- BEGIN:TEAM_TABLE -->` and `<!-- END:TEAM_TABLE -->`).

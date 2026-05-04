@@ -4,7 +4,7 @@ Add a `@wait(reason)` tag to a matched leaf and drop `@today`.
 
 ## Execution
 
-1. Read `~/.claude/workboard.json`. Halt if missing.
+1. Resolve workboard config: prefer `<project-root>/.workboard.json` (project-root = `git rev-parse --show-toplevel`), fall back to `~/.claude/workboard.json`. Halt if neither exists.
 2. Capture cwd context (project hint).
 3. `cd` to `path`. Read `people/{id}.md`.
 4. Match the `@today` leaf (same algorithm as `/done`); if 0 / 2+, ask.
