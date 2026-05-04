@@ -4,20 +4,23 @@ A Claude Code plugin that distributes a structured team workboard system: bootst
 
 ## Why this is a plugin and not a template repo
 
-The plugin's value concentrates in three places:
+The plugin's value concentrates in four places:
 
 1. **Bootstrap** (`/oh-my-workboard:init`) — turns a 30-minute manual setup (directory tree, team.yaml, hooks, workflows, settings.json) into a single command.
 2. **Cross-cwd mid-work updates** — the user is coding in repo A; the plugin commands (and matching skills) auto-absorb the cwd's git context (PR, branch, diff, recent commits) and write accurate descriptions to the task repo, which a Claude session inside the task repo cannot do.
-3. **Distribution + versioning** — `marketplace add chsy0823/oh-my-workboard` for any team; `plugin update` for centralized data-model migrations.
+3. **Multi-workspace via cascading config** — `<project-root>/.workboard.json` overrides the global default, so one user can run different task repos from different project repos (e.g., personal tasks globally, work tasks locally per company repo).
+4. **Distribution + versioning** — `marketplace add chsy0823/oh-my-workboard` for any team; `plugin update` for centralized data-model migrations.
 
 Daily natural-language conversation about the workboard still happens **inside the task repo** (Claude there has CLAUDE.md and the workboard tree); the plugin doesn't replace that, it extends it.
 
 ## Core design
 
-- **Task repo separate from project repos.** `~/.claude/workboard.json` stores its path; commands/skills `cd` into it before acting and restore cwd at end.
+- **Task repo separate from project repos.** Cascading config (local `<project-root>/.workboard.json` → global `~/.claude/workboard.json`) stores the task-repo path; commands/skills `cd` into it before acting and restore cwd at end. Different project repos can point to different task repos.
 - **Team mapping SSOT** = `.workboard/team.yaml` inside the task repo. CLAUDE.md table, Slack workflow envs, daily-report Slack mention table, and `people/{id}.md` scaffolds are all rendered from it.
 - **Tracking SSOT** = `board/status.md` `## This Week's Team Goals` sub-checklist.
-- **Hooks are path-scoped**. They only fire when cwd matches `workboard.path`.
+- **Hooks split by event type**:
+  - Plugin-level (always loaded): SessionStart + Stop, dispatched only when cwd matches the resolved task-repo path.
+  - Project-level (`<task-repo>/.claude/settings.json`): PreToolUse + PostToolUse, fire on file edits inside the task repo.
 - **Workboard format** = single tree with tags.
 - **Solo mode = team mode with 1 member.**
 
@@ -125,108 +128,86 @@ Both files share the same schema:
 ### P0 — Repo bootstrap ✓
 `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, README, this PLAN.
 
-### P1 — Ritual commands (5)
-- `start-day` — pick `@today`, brief, validate
-- `end-day` — walk `@today`, off-plan capture, leader-only status sync
-- `start-week` — mirror status subs, archive last week, compose new week
-- `plan-week` — leader-only; backlog scan, status.md sub-checklist for new week
-- `wrap-week` — leader-only; quantitative wrap-up + retro + velocity row
+### P1 — Ritual commands ✓
+Plugin root `commands/{start-day,end-day,start-week,plan-week,wrap-week}.md`. Each is a thin wrapper that resolves the workboard config (cascading), `cd`s to the task repo, and delegates to that repo's project-local `.claude/commands/{name}.md` for the canonical flow. Leader-only commands (`plan-week`, `wrap-week`) verify against `team.yaml:leader` before delegating.
 
-Each:
-- Reads `~/.claude/workboard.json`, cd's to task repo, restores cwd at end.
-- Resolves user via `git config user.name` against `team.yaml`.
-- No auto-commit; always shows draft and asks before commit + push.
+### P2 — `/oh-my-workboard:init` ✓
+Interactive setup with two flag axes:
+- **Mode**: `--solo` / `--team-init` / `--team-join`
+- **Scope**: `--scope global` (default, writes `~/.claude/workboard.json`) / `--scope local` (writes `<project-root>/.workboard.json`)
 
-### P2 — `/oh-my-workboard:init`
-Interactive: mode (`--solo` / `--team-init` / `--team-join`), members, leader, projects, Slack/dashboard opt-ins, task-repo path, GitHub remote.
+Solo / team-init flow renders `.workboard/team.yaml`, `CLAUDE.md` (substitutes `{{TEAM_TABLE}}`, `{{LEADER_ID}}`, `{{TEAM_NAME}}`), `people/{id}.md` per active member, workflow env blocks (only if Slack), `scripts/daily-report.js` SLACK_ID_FALLBACK; copies templates as-is for `board/`, `.githooks/`, `.claude/{settings.json,commands,hooks,skills}`, `scripts/`, `dashboard/lib/`. Initial `[init]` commit + optional push. Asks each opt-in toggle (`session_brief`, `wip_commit_prompt`, `auto_dashboard`) — defaults all `n`.
 
-Renders from collected data:
-- `.workboard/team.yaml`
-- `CLAUDE.md` (substitutes `{{TEAM_TABLE}}`, `{{LEADER_ID}}`, `{{TEAM_NAME}}`)
-- `people/{id}.md` per active member
-- `.github/workflows/{slack-notify,daily-report}.yml` env blocks (only if Slack)
-- `scripts/daily-report.js` SLACK_ID_FALLBACK block
+`--team-join` clones an existing task repo, validates `.workboard/team.yaml`, writes the config file. No rendering.
 
-Copies as-is: `board/{status,blockers,requests,backlog,velocity}.md`, `.githooks/`, `.claude/{settings.json,commands/,hooks/}`, `scripts/setup.sh`, `dashboard/lib/parser.js`, `dashboard/cli.js`.
+### P3 — Hooks ✓
+Split by event type to avoid double-firing:
 
-Writes `~/.claude/workboard.json`. Initial `[init]` commit + (opt) push.
-
-`--team-join` variant: clones existing task repo, validates `.workboard/team.yaml`, writes `~/.claude/workboard.json`. No rendering.
-
-### P3 — Hooks
-- `hooks/hooks.json` declares plugin-level PreToolUse/PostToolUse hooks that gate on `cwd == workboard.path`. Inside that path, they delegate to `{task-repo}/.claude/hooks/*.sh`.
-- Hook contract: `$CLAUDE_FILE_PATH` + `$CLAUDE_PROJECT_DIR` env vars (already used by the templates).
-- `check-permissions.sh`: ownership (people/{self} only) + branch protection (projects/, CLAUDE.md non-leader on main); team.yaml-driven; `yq` primary, awk/grep fallback.
-- `remind-commit.sh`: PostToolUse on `people/**` — prints reminder when there are uncommitted changes.
-- Optional opt-in hooks (off by default; enabled via `workboard.json` flags):
-  - SessionStart brief (`session_brief: true`)
-  - Stop prompt for WIP commits (`wip_commit_prompt: true`)
-  - SessionStart dashboard auto-boot (`auto_dashboard: true`)
+- **Plugin level** (`hooks/hooks.json` + `hooks/dispatch.sh`): SessionStart + Stop. dispatch.sh resolves the task-repo path from the cascading config and only fires when `$PWD` matches it; routes to `<task-repo>/scripts/session-brief.js` (SessionStart) and `<task-repo>/.claude/hooks/uncommitted-reminder.sh` (Stop). Both target scripts self-gate on the `session_brief` / `wip_commit_prompt` flags (default off).
+- **Project level** (`<task-repo>/.claude/settings.json`): PreToolUse + PostToolUse on `Edit|Write`. Hooks: `check-permissions.sh` (ownership + branch protection, team.yaml-driven, `yq` primary with awk/grep fallback), `lint-workboard.sh` (R1–R8 PostToolUse gate), `remind-commit.sh` (commit reminder on `people/**` edits).
+- **Hook contract**: `$CLAUDE_FILE_PATH` + `$CLAUDE_PROJECT_DIR` env vars.
 - `.githooks/pre-push` reads `leader` from team.yaml for bypass.
 
-### P4 — Mid-work commands + parallel skills
+### P4 — Mid-work commands + parallel skills ✓
 
-Each mid-work entry exists as **both** a slash command (explicit) and a skill (auto-trigger from natural language). Same logic; different entry points. All flows always show a draft and ask "commit?" before writing — never auto-commit.
+Each mid-work entry exists as **both** a slash command (explicit) and a skill (auto-trigger from natural language). Same flow; different entry points. All flows always show a draft and ask "commit?" before writing — never auto-commit.
 
 | Command / Skill | cwd auto-absorb | User input | Writes to |
 |------------------|-----------------|------------|-----------|
 | `request` / `workboard-request` | category 1: PR# (`gh pr view`), branch, commit summary; category 2-4: project label from repo name; "what unblocks me" auto-drafted from current `@today` matching this repo | category, receiver, content, focus, deadline | `board/requests.md` |
-| `done` / `workboard-done` | recent commits, PR#, branch, diff summary | confirm leaf match | own `people/{id}.md` (mark `[x]`, `@done`, completion note) |
+| `done` / `workboard-done` | recent commits, PR#, branch, diff summary | confirm leaf match | own `people/{id}.md` (mark `[x]`, `@done`, completion note); optional `@handoff` + `## Handoffs` entry |
 | `note` / `workboard-note` | branch, recent activity | note text | matched `@today` leaf as note bullet |
 | `block` / `workboard-block` | branch, error context, blocked file path | reason, scope (external / teammate / team-wide) | `@block(reason)` leaf, OR `requests.md`, OR `board/blockers.md` |
 | `wait` / `workboard-wait` | matched `@today` leaf | reason | `@wait(reason)` on leaf, drop `@today` |
 | `add` / `workboard-add` | project label from repo name | task text, week target | new top-level leaf in current week |
 | `status` / `workboard-status` | none (read-only) | optional `--user` | terminal briefing |
 
-Skill description rule: trigger ONLY on explicit recording intent ("send X a request", "ask Y to do Z", "I'm done with this", "I'm blocked"). Casual mentions ("I'll talk to Y later") MUST NOT trigger. Always show draft + confirm before writing.
+Skill description rule: trigger ONLY on explicit recording intent ("send X a request", "ask Y to do Z", "I'm done with this", "I'm blocked"). Casual mentions ("I'll talk to Y later") MUST NOT trigger.
 
 cwd → `@today` leaf matching algorithm:
 1. Auto-detect project label from repo name (or from `team.yaml` known-projects fuzzy match).
 2. Find current user's `@today` leaves where project matches.
 3. 1 match → auto-pick. 2+ → ask. 0 → ask the user to add `@today` first or specify which leaf.
 
-### P5 — Maintenance commands
-- `where` — print configured task-repo path, mode, remote, opt-in flag states.
+### P5 — Maintenance commands ✓
+- `where` — print resolved config source (local / global), task-repo path, mode, remote, opt-in flag states, git status of the task repo.
 - `sync-team` — re-render CLAUDE.md team table, Slack workflow envs, `daily-report.js` SLACK_ID_FALLBACK, and `people/{id}.md` scaffolds from `.workboard/team.yaml`. Archives files for members flipped to `active: false` (with confirmation).
-- `doctor` — health check: hooks active? team.yaml resolves current user? Slack ID resolution? lint status? old-format detection? Prints summary.
+- `doctor` — health check: hooks active? team.yaml resolves current user? Slack ID resolution? lint status? legacy format detection? Prints summary.
 - `lint` — runs `scripts/lint-workboard.js` against current task repo; reports invariant violations.
 - `report` — locally render daily-report `--text` mode for preview without posting to Slack.
 
-### P6 — Templates ✓ (mostly done)
-Generated by `bin/install-templates.sh`:
-- `CLAUDE.md` (with render markers)
-- `team.yaml`, `.gitignore`, `log/.gitkeep`
-- `board/{status,blockers,requests,backlog,velocity}.md`
+### P6 — Templates ✓
+Plugin's `templates/` set, copied/rendered into each new task repo by `init`:
+- `CLAUDE.md` (~90L; data model lives in the workboard-model skill, not inline)
+- `team.yaml`, `.gitignore` (tracks `.claude/{settings.json,commands,hooks,skills}/`), `log/.gitkeep`
+- `board/{status,blockers,requests,backlog,velocity}.md` (requests has `## Handoffs` category)
 - `people/_member.md`
 - `projects/_example/{overview,milestones,streams}.md`
-- `.claude/commands/{start-day,end-day,start-week,plan-week,wrap-week}.md` (project-local copies)
-- `.claude/hooks/{check-permissions,remind-commit}.sh` (env-var contract)
-- `.claude/settings.json`
+- `.claude/commands/{start-day,end-day,start-week,plan-week,wrap-week}.md`
+- `.claude/hooks/{check-permissions,remind-commit,lint-workboard,uncommitted-reminder}.sh`
+- `.claude/settings.json` (PreToolUse + PostToolUse only — SessionStart/Stop are plugin-level)
+- `.claude/skills/workboard-model/SKILL.md` (data-model contract: tree format, reserved tags, file formats, R1–R8 invariants)
 - `.githooks/{commit-msg,pre-push}` (team.yaml-driven leader bypass)
-- `.github/workflows/{slack-notify,daily-report}.yml` (with `{{SLACK_ID_BLOCK}}` markers)
-- `scripts/{setup.sh,daily-report.js}`
-- `dashboard/lib/parser.js`, `dashboard/cli.js`
-
-**To port** (see "Port from validated implementation" below):
-- `skills/workboard-model/SKILL.md` (data-model spec lifted out of CLAUDE.md)
-- `scripts/lint-workboard.js` + `.claude/hooks/lint-workboard.sh` + `.github/workflows/lint-workboard.yml`
-- Handoffs category in `board/requests.md` + parser branch + command flow updates
-- `parseVelocity()` + `computeVelocityTrend()` in `dashboard/lib/parser.js`
-- (opt-in, toggle-gated) `scripts/session-brief.js` + `.claude/hooks/uncommitted-reminder.sh`
+- `.github/workflows/{slack-notify,daily-report,lint-workboard}.yml`
+- `scripts/{setup.sh,daily-report.js,lint-workboard.js,session-brief.js}`
+- `dashboard/lib/parser.js` (with `parseVelocity` + `computeVelocityTrend`), `dashboard/cli.js`
 
 **Deferred to v0.2**:
 - `dashboard/server.js`, `dashboard/public/index.html` (web UI)
 
 ### P7 — Local tests
 - `claude --plugin-dir ./oh-my-workboard`
-- Three scratch dirs: solo / team-init / team-join end-to-end
+- Three scratch dirs: solo / team-init / team-join end-to-end (each tested with `--scope global` AND `--scope local`)
+- **Cascading config**: with both global + local set, commands resolve to local; with local removed, commands fall back to global; `/where` reports the right `source` in each case
 - All ritual commands fire correctly cross-cwd
 - All mid-work commands auto-absorb cwd git context
 - Skills auto-trigger correctly from natural-language utterances; no false positives on casual mentions
-- Hooks fire only inside task repo
+- Hooks fire only inside task repo (plugin-level SessionStart + Stop gated by dispatch.sh; project-level PreToolUse + PostToolUse fire only when Claude is in the task repo)
 - Add 6th member via team.yaml + `/sync-team` — CLAUDE.md, workflows, `people/` all update
 - Flip member to `active: false` — sync-team archives without losing history
 - `/report` produces valid Slack-blocks JSON
+- `/lint` exits non-zero on R1–R8 violations; CI workflow (`lint-workboard.yml`) blocks PRs with errors
+- `/doctor` reports green on a clean install
 - Force-trigger daily-report.yml via `workflow_dispatch`
 
 ### P8 — README / release prep
@@ -236,90 +217,15 @@ Generated by `bin/install-templates.sh`:
 - Version bump to 0.1.0
 - `marketplace.json` final check
 
-## Port from validated implementation
+## Ported features ✓
 
-These features are validated in real use and ready to port. Recommended order: **workboard-model skill → lint → Handoffs → velocity → toggle-gated session brief / stop reminder**. Items 2–5 build on items 1 and the existing P5 templates.
+All five features validated upstream have been ported into the plugin's `templates/` set:
 
-### 1. `skills/workboard-model` (foundation)
-
-Move the data-model spec out of CLAUDE.md into a dedicated skill, so CLAUDE.md becomes a behavior doc and the model spec is loaded only when relevant.
-
-Source: `.claude/skills/prdv-workboard-model/SKILL.md` (251L) + `.gitignore` allow-list `!.claude/skills/`.
-
-Plugin adaptations:
-- Rename: `prdv-workboard-model` → `workboard-model`
-- Translate the entire SKILL.md to English: frontmatter (`name`, `description`), lint R1–R8 table, single-channel rule, tree format, reserved tags table, file format sections
-- Replace hardcoded example values (`sarcofit`, `chsy0823`, etc.) with generic placeholders (`{project}`, `{user}`)
-- CLAUDE.md template shrinks (~700L → ~320L pattern from prdv); data-model section becomes a pointer to the skill
-- Plugin's `templates/.gitignore` allow-list adds `!.claude/skills/`
-
-### 2. Lint (`scripts/lint-workboard.js` + hook + CI)
-
-Workboard invariant validator implementing R1–R8 from the model.
-
-Source files:
-- `scripts/lint-workboard.js` (180L, R1–R8 rules)
-- `.claude/hooks/lint-workboard.sh` (PostToolUse wrapper)
-- `.github/workflows/lint-workboard.yml` (CI gate)
-- `.claude/settings.json` PostToolUse registration
-
-Plugin adaptations:
-- Translate all Korean comments and finding messages to English (e.g. `@today 가 leaf 가 아닌 노드에 붙음` → `@today must only be on leaves`)
-- `KNOWN_PROJECT_LABELS` already auto-collected from `data.milestones[].project` — keep
-- `ALLOWED_TAGS` matches the workboard model — keep as-is
-
-### 3. Handoffs category in `requests.md`
-
-Adds a fifth category for cross-member handoff acknowledgment, replacing the workboard-only `@handoff` flow with single-channel tracking.
-
-Source files:
-- `templates/board/requests.md` — add `## Handoffs` empty section + preamble entry
-- `templates/dashboard/lib/parser.js` — `reqTypeOf` `'handoff'` branch (already in plugin's parser; verify)
-- `templates/dashboard/public/index.html` — incoming/outgoing badge `'handoff'` case (deferred to v0.2 with dashboard UI)
-- `templates/.claude/commands/end-day.md` — handoff-send flow (writes both `@handoff` tag and a Handoffs entry)
-- `templates/.claude/commands/start-day.md` — handoff-pickup is the documented exception to the no-duplication rule (mirror allowed)
-- `templates/CLAUDE.md` — Handoffs category one-liner
-
-Plugin adaptations:
-- Category name `Handoffs` (English, no i18n)
-- Badge labels: `Handoff in`, `Handoff out`
-- All flow docs translated to English
-
-### 4. Velocity machine-readable
-
-Make `board/velocity.md` parseable so `/wrap-week` renders real 4-week trends.
-
-Source files:
-- `dashboard/lib/parser.js` — `parseVelocity()` and `computeVelocityTrend()` functions, `parseAll().velocity` field (already partially in plugin's parser; finalize)
-- `templates/.claude/commands/wrap-week.md` Step 1 #6 (real trend instead of placeholder)
-- `templates/board/velocity.md` header
-
-Plugin adaptations:
-- Parser comments and function docstrings → English
-- Velocity table headers `Week / Planned subs / Done subs / % / Note` (already English)
-- `^W(\d+)$` regex unchanged
-- Wrap-week trend message → English
-
-### 5. SessionStart brief + Stop reminder (toggle-gated, opt-in)
-
-Source files:
-- `scripts/session-brief.js` (170L) — per-user briefing renderer
-- `.claude/hooks/uncommitted-reminder.sh` — Stop hook prompt
-- `.claude/settings.json` SessionStart command extension + Stop hook entry
-
-Plugin adaptations (must satisfy memories: default-off + no-auto-commit):
-- Both hooks read `~/.claude/workboard.json` flags before running:
-  ```bash
-  if [ "$(jq -r .session_brief ~/.claude/workboard.json)" = "true" ]; then
-    node scripts/session-brief.js
-  fi
-  ```
-- `init` interactively asks each toggle (default `n`):
-  - `Enable session brief on every Claude Code start? [y/N]`
-  - `Enable uncommitted reminder at session end? [y/N]`
-- `session-brief.js` `TEAM_KEYWORDS` hardcode → load from `.workboard/team.yaml`
-- Stop hook is **prompt only** — never invokes `git commit` automatically. Output: "Uncommitted changes in `people/{id}.md`. Commit now? [y/N]" — user types the commit if desired
-- All output strings English: `📋 {user} — W{N} D{day}`, "This week", "Today", "Waiting on me", "Incoming requests", "Outgoing requests", "My blockers"
+1. **`workboard-model` skill** — data-model contract lifted out of CLAUDE.md into `.claude/skills/workboard-model/SKILL.md` (English, generic placeholders).
+2. **Lint** — `scripts/lint-workboard.js` (R1–R8) + `.claude/hooks/lint-workboard.sh` (PostToolUse wrapper) + `.github/workflows/lint-workboard.yml` (CI gate). `KNOWN_PROJECT_LABELS` auto-discovered from `data.milestones[].project`.
+3. **Handoffs category** in `board/requests.md` — handoff sender writes both the workboard `@handoff(user: action)` tag AND a `## Handoffs` queue entry; receiver picks it up on `/start-day`, mirroring as a workboard top-level leaf and removing the queue entry.
+4. **Velocity machine-readable** — `parseVelocity()` and `computeVelocityTrend(rows, 4)` in `dashboard/lib/parser.js`; `/wrap-week` renders real 4-week trends.
+5. **SessionStart brief + Stop reminder** (toggle-gated) — `scripts/session-brief.js` and `.claude/hooks/uncommitted-reminder.sh`; both gated by cascading-config flags `session_brief` / `wip_commit_prompt`. Stop is prompt-only — never invokes `git commit`. session-brief loads team mapping from `.workboard/team.yaml` (no hardcoded team).
 
 ## Decisions (locked)
 
@@ -334,6 +240,8 @@ Plugin adaptations (must satisfy memories: default-off + no-auto-commit):
 - **Team mapping SSOT** = `.workboard/team.yaml` inside the task repo.
 - **Tracking SSOT** = `board/status.md` `## This Week's Team Goals` sub-checklist.
 - **Workboard-model spec lives in a skill** (`skills/workboard-model/SKILL.md`), not inline in CLAUDE.md. CLAUDE.md is behavior; the skill is the data-model contract.
+- **Cascading config**: local `<project-root>/.workboard.json` replaces global `~/.claude/workboard.json` wholesale (no merge in v0.1). Local resolves via `git rev-parse --show-toplevel` of cwd; falls back to `$PWD`. Lets one user point different project repos at different task repos.
+- **Hook split by event type**: SessionStart + Stop are plugin-level (run from any cwd, gated to task-repo path via `dispatch.sh`); PreToolUse + PostToolUse are project-local in `<task-repo>/.claude/settings.json`. Avoids double-firing when both plugin and task repo are active.
 - **Hook contract** = `$CLAUDE_FILE_PATH` + `$CLAUDE_PROJECT_DIR` env vars.
 - **Parser** = `yq` primary, `awk`/`grep` fallback. No hard yq dependency in v0.1.
 - **Cross-member dependencies** = `board/requests.md` only. No `@wait(user:...)` on workboards.
