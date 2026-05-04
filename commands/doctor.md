@@ -1,0 +1,27 @@
+# /oh-my-workboard:doctor
+
+Health check for the plugin + task repo configuration.
+
+## Execution
+
+Print sections (each with ✓ or ✗):
+
+1. **User config**: `~/.claude/workboard.json` exists, `path` resolves, `mode` valid.
+2. **Task repo**: directory exists, is a git repo, on `main` (or report current branch).
+3. **Team mapping**: `.workboard/team.yaml` exists, parses, leader present, ≥1 active member.
+4. **User resolution**: `git config user.name` resolves to a member id via id/name/keywords; print the resolved id.
+5. **Hooks**:
+   - `.claude/settings.json` exists, valid JSON
+   - PostToolUse hooks present (lint-workboard.sh, remind-commit.sh)
+   - PreToolUse hooks present (check-permissions.sh)
+   - All hook scripts present and executable
+6. **Skills**: `.claude/skills/workboard-model/SKILL.md` exists.
+7. **Slack** (if configured): each `SLACK_ID_{id}` env in workflows resolves; `SLACK_WEBHOOK_URL` secret exists (or report unset).
+8. **Lint**: run `node scripts/lint-workboard.js --quiet` and report errors / warnings count.
+9. **Legacy format**: scan `people/*.md` for old-style sections (`## In Progress`, `## Waiting`, etc.); flag any.
+10. **Toggle flags**: report `session_brief`, `wip_commit_prompt`, `auto_dashboard` states.
+
+## Notes
+
+- Read-only. Never modifies anything.
+- Useful as the first command to run after `init` or after a plugin update.
