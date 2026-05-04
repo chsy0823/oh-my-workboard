@@ -7,3 +7,11 @@ package-lock.json
 dashboard/test*.png
 dashboard/test*.mjs
 .obsidian/
+
+# Claude Code: track shared settings/commands/hooks/skills only.
+# Per-user local files (settings.local.json, agent state, etc.) stay ignored.
+.claude/*
+!.claude/settings.json
+!.claude/commands/
+!.claude/hooks/
+!.claude/skills/

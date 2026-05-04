@@ -26,75 +26,42 @@ The team leader is `{{LEADER_ID}}`. The leader can edit any teammate's workboard
 6. Think from the receiver's perspective for any cross-team artifact.
 7. If receiver context is incomplete, ask once (batched) before recording.
 
-## Data model
+## Data model — see the `workboard-model` skill
 
-Each member's workboard (`people/{id}.md`) is a **single tree**. The only section is `## This Week's Tasks (W{N})`. All state lives on tree leaves as tags.
+The full data-model contract (tree format, parsing rules, file formats, lint invariants R1–R8, request categories, status-board sub-checklist semantics, velocity table, etc.) lives in the `workboard-model` skill (`.claude/skills/workboard-model/SKILL.md`). Claude Code auto-loads it when format/spec questions arise or when validation is needed.
 
-### Tree format
+Quick reference for everyday operations:
 
-```
-## This Week's Tasks (W17)
+### Workboard tree
 
-- [ ] [project] top-level task (weekly-goal unit)
-  - [x] subtask @done(2026-04-22)
-  - [ ] subtask @today
-  - [ ] subtask @wait(precondition or external reason)
-  - free-form note bullet (no checkbox)
-- [x] [project] single-shot @done(2026-04-22) @handoff(user: continuation)
-```
+Each member's workboard (`people/{id}.md`) has one section: `## This Week's Tasks (W{N})`. All state lives on tree leaves as tags. Subtasks indent 2 spaces. Bullets without checkboxes are notes, not child tasks.
 
-### Reserved tags
+### Tags
 
-| Tag | Meaning | Value |
-|-----|---------|-------|
-| `@today` | picked for today | none |
-| `@done(YYYY-MM-DD)` | completed; pair with `[x]` | completion date |
-| `@wait(reason)` | external / self precondition | free text — never `user:` |
-| `@block(reason)` | severe variant of `@wait` | same |
-| `@handoff(user: action)` | someone else picks up | `user` = GitHub id (no `@`) |
+| Tag | Meaning |
+|-----|---------|
+| `@today` | picked for today |
+| `@done(YYYY-MM-DD)` | completed; pair with `[x]` |
+| `@wait(reason)` | external / self precondition — never `user:` |
+| `@block(reason)` | severe variant of `@wait` |
+| `@handoff(user: action)` | someone else picks up next |
 
-### Cross-member dependencies → `board/requests.md` only
+Multiple tags allowed at end of line, space-separated. Project label is the leading `[word]` of content; subtasks inherit.
 
-Anything you ask of a teammate goes into `board/requests.md`. **Never** use `@wait(user:...)` on the workboard.
+### Single-channel rule
 
-`@wait(reason)` still applies for: external (regulator, vendor, customer), self-precondition. No `user:` field.
+Cross-member dependencies live in `board/requests.md` only. **Never** use `@wait(user:...)` on the workboard.
 
-**No-duplication rule**: a request in `requests.md` does NOT also appear as `@today` in the receiver's workboard.
+A request in `requests.md` does NOT also appear as a leaf on the receiver's workboard. (Exception: Handoffs — see the skill.)
 
-### Request format
+### File layout (brief)
 
-Categories: `## PR Reviews`, `## Design Reviews`, `## Work Requests`, `## Decisions Needed`. Plus `## Handoffs` if your team enables handoff acks.
+- `board/{status,blockers,requests,backlog,velocity}.md`
+- `people/{id}.md` — personal workboards
+- `projects/{name}/{overview,milestones,streams}.md` + `decisions/`
+- `log/{YYYY-MM-DD}.md`, `log/w{N}.md`, `log/w{N}-retro.md`
 
-```
-- {requester} → {receiver}: [{project}] {content} — {YYYY-MM-DD}
-  - 📎 {artifact}
-  - 🔍 {what to look at / what unblocks}
-  - ⏰ {YYYY-MM-DD}
-  - 🔄 changes-requested → @{requester} in-progress (MM-DD)
-```
-
-The `[project]` prefix is **required**. Use `[misc]` if no project applies. `⏰` deadlines should be concrete dates.
-
-### Status board → `board/status.md`
-
-`## This Week's Team Goals` is the team's weekly **tracking SSOT**:
-
-```md
-- [ ] {team goal} → M1-1, M1-2
-  - [ ] @{user}: {weekly unit; must equal owner's workboard top-level text}
-- [ ] {team goal — no mapping}
-  - [ ] @{user}: {sub}
-```
-
-Owners must keep their workboard top-level leaf text **identical** to their assigned status sub.
-
-### Backlog → `board/backlog.md`
-
-Format `- P{1|2|3} [{project}] content — proposer (YYYY-MM-DD)`. Promoted items are removed from backlog when added to a workboard.
-
-### Velocity → `board/velocity.md`
-
-Markdown table appended once per week by `/wrap-week`. Healthy zone: 70–90%.
+For request categories, ping-pong state tags, status-board format, velocity table format, and lint rules, consult the `workboard-model` skill.
 
 ## Session start
 
