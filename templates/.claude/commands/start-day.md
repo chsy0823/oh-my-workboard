@@ -36,6 +36,10 @@ For each `@wait(reason)` leaf and each `🔄` request: ask "any movement?" and u
 2. Show candidates; user picks.
 3. For each pick, confirm it can finish today. If not, **split in place** into 2–5 sub-leaves; tag only today's chunk with `@today`. Parent stays `[ ]`.
 4. If a `requests.md` item is picked, do **not** mirror it onto the workboard — no-duplication rule.
+   - **Exception — `## Handoffs` category**: handoffs are substantial new work for the receiver, often spanning days. If the user picks a handoff:
+     1. Remove the corresponding entry from `board/requests.md` `## Handoffs`.
+     2. Mirror it as a top-level leaf in this week's tree: `- [ ] [{project}] {action}`.
+     3. Tag that leaf (or one of its sub-leaves) with `@today`.
 5. If nothing is picked, ask once more. If still nothing, write `- no-start({YYYY-MM-DD}): {reason}` under the weekly section.
 
 ### Pre-commit validation

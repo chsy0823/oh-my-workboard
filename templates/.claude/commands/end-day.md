@@ -31,7 +31,15 @@ If every sub-leaf of a parent is `[x]`, mark parent `[x] @done({latest sub date}
 
 ### Handoffs
 
-For done leaves where someone else picks up next: ask "who continues this?". Add `@handoff(user: action)`. Do NOT touch the receiver's workboard — they pick it up on their `/start-day`.
+For done leaves where someone else picks up next, write **both** of these in the same edit:
+
+1. Add `@handoff(user: action)` to the completed leaf (history record). `user` = GitHub id without `@`.
+2. Add an entry to `board/requests.md` under `## Handoffs`:
+   - `{me} → {target}: [{project}] {action} — {YYYY-MM-DD}`
+   - Add `⏰ YYYY-MM-DD` if a deadline is known.
+   - Add `🔍 ...` for any extra context the receiver needs (artifact location, where to start).
+
+This is the single channel for handoffs. Do NOT touch the receiver's workboard — they pick it up on their `/start-day` (which mirrors the entry to their tree and removes it from the queue).
 
 ### Off-plan completed work
 
