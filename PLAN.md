@@ -246,6 +246,7 @@ All five features validated upstream have been ported into the plugin's `templat
 - **Parser** = `yq` primary, `awk`/`grep` fallback. No hard yq dependency in v0.1.
 - **Cross-member dependencies** = `board/requests.md` only. No `@wait(user:...)` on workboards.
 - **Dashboard parser is core**: `dashboard/lib/parser.js` ships even when dashboard UI is opted out (daily-report needs it).
+- **External CLI prereqs**: `gh` CLI (required for `/discuss`; checked by `setup.sh` and `/doctor`), `node` (required for `scripts/*.js`), `yq` (preferred — awk/grep fallback exists), `jq` (preferred for hook toggles — grep fallback exists). No browser fallback for `gh` in v0.1.
 - **Multi-team support**: single team in v0.1, array of contexts later.
 
 ## Deferred
