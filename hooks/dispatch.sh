@@ -36,7 +36,10 @@ fi
 if [ -z "$WB_PATH" ]; then
   WB_PATH="$(grep -oE '"path"[[:space:]]*:[[:space:]]*"[^"]+"' "$WORKBOARD_JSON" 2>/dev/null | sed -E 's/.*"([^"]+)"[^"]*$/\1/' | head -1)"
 fi
-[ -z "$WB_PATH" ] && exit 0
+if [ -z "$WB_PATH" ]; then
+  echo "[oh-my-workboard] warn: could not resolve task repo path from $WORKBOARD_JSON (install jq for full support, including paths with spaces)" >&2
+  exit 0
+fi
 
 # Only fire when the user is inside the configured task repo (including subdirs).
 case "$PWD" in
