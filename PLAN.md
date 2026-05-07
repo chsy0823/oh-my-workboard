@@ -161,6 +161,7 @@ Each mid-work entry exists as **both** a slash command (explicit) and a skill (a
 | `wait` / `workboard-wait` | matched `@today` leaf | reason | `@wait(reason)` on leaf, drop `@today` |
 | `add` / `workboard-add` | project label from repo name | task text, week target | new top-level leaf in current week |
 | `status` / `workboard-status` | none (read-only) | optional `--user` | terminal briefing |
+| `discuss` / `workboard-discuss` | repo name → label candidate; cwd context as optional issue context | title, body (markdown), labels, assignees (from `team.yaml`) | GitHub issue on the task repo via `gh issue create --repo {remote}` |
 
 Skill description rule: trigger ONLY on explicit recording intent ("send X a request", "ask Y to do Z", "I'm done with this", "I'm blocked"). Casual mentions ("I'll talk to Y later") MUST NOT trigger.
 
