@@ -28,13 +28,14 @@ if command -v yq >/dev/null 2>&1; then
   LEADER="$(yq e '.leader' "$TEAM_YAML" 2>/dev/null || echo "")"
   [ "$LEADER" = "null" ] && LEADER=""
   if [ -n "$USER_LOWER" ]; then
+    export USER_LOWER_ENV="$USER_LOWER"
     MY_ID="$(yq e "
       .members[] |
       select(.active == true) |
       select(
-        (.id | ascii_downcase | test(\"$USER_LOWER\")) or
-        (.name | ascii_downcase | test(\"$USER_LOWER\")) or
-        ((.keywords // []) | .[] | ascii_downcase | test(\"$USER_LOWER\"))
+        (.id | ascii_downcase | test(env.USER_LOWER_ENV)) or
+        (.name | ascii_downcase | test(env.USER_LOWER_ENV)) or
+        ((.keywords // []) | .[] | ascii_downcase | test(env.USER_LOWER_ENV))
       ) | .id
     " "$TEAM_YAML" 2>/dev/null | head -1 || echo "")"
     [ "$MY_ID" = "null" ] && MY_ID=""

@@ -19,7 +19,7 @@ When any plugin command runs, it resolves the active workboard config in this or
 2. `~/.claude/workboard.json` (global default)
 3. None → halt with "Workboard not configured. Run `/oh-my-workboard:init` first."
 
-Local replaces global wholesale (no merge in v0.1). To use the global default in a directory that has a local file, the user can delete the local file or run init with `--scope local` again with the desired settings.
+Local replaces global wholesale (no key-level merge in v0.1). This means if a local `.workboard.json` exists but omits a toggle key (e.g. `session_brief`), that toggle silently defaults to `false` even if the global config has it set to `true`. To use the global default in a directory that has a local file, the user can delete the local file or run init with `--scope local` again with all desired settings.
 
 ## Branch A — `--solo` or `--team-init`
 

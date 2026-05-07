@@ -35,7 +35,7 @@ RC=$?
 if [ "$RC" -ne 0 ]; then
   echo "[workboard-lint] data-model violations detected — fix and retry." >&2
   echo "$OUTPUT" >&2
-  exit 2
+  exit 1
 fi
 
 exit 0

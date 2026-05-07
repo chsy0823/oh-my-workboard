@@ -38,8 +38,11 @@ if [ -z "$WB_PATH" ]; then
 fi
 [ -z "$WB_PATH" ] && exit 0
 
-# Only fire when the user is inside the configured task repo.
-[ "$PWD" != "$WB_PATH" ] && exit 0
+# Only fire when the user is inside the configured task repo (including subdirs).
+case "$PWD" in
+  "$WB_PATH"*) ;;
+  *) exit 0 ;;
+esac
 
 SCRIPT_PATH="$WB_PATH/$TARGET"
 [ ! -f "$SCRIPT_PATH" ] && exit 0

@@ -8,5 +8,8 @@
   "homepage": "https://github.com/chsy0823/oh-my-workboard",
   "repository": "https://github.com/chsy0823/oh-my-workboard",
   "license": "MIT",
-  "keywords": ["workboard", "team", "task-management", "daily", "standup"]
+  "keywords": ["workboard", "team", "task-management", "daily", "standup"],
+  "commands": ["commands/*.md"],
+  "skills": ["skills/*.md"],
+  "hooks": ["hooks/hooks.json"]
 }
