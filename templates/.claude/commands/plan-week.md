@@ -7,6 +7,12 @@ Set the team's direction for the week before members run `/start-week`. Gated by
 1. Resolve task repo. `cd` there. `git pull`.
 2. Verify current user is the leader. If not, halt with explanation.
 
+### Last week's retro
+
+Before reviewing workboards, read `log/w{N-1}-retro.md` if it exists.
+- Extract the **"Apply next week"** section items.
+- Hold these through the rest of planning — they must be reflected in this week's team direction and status.md subs, not silently dropped again.
+
 ### Team review
 
 1. Read all `people/*.md` `## This Week's Tasks (W{N-1})` trees.
@@ -50,6 +56,9 @@ Rules:
 3. Each team goal has subs `  - [ ] @{user}: {text}`. Text MUST match the user's workboard top-level when they mirror it.
 4. Background or training items can have no mapping — only subs.
 5. Aim for 1–3 subs per person.
+6. **Weekly commit rule**: a sub must be closeable within this 7-day window. Do NOT copy an entire milestone sub-list as this week's subs — extract only the slice completable this week.
+7. **Milestone tracking separation**: `milestones.md` tracks full milestone progress; `status.md` tracks only this week's commits. Never conflate the two scopes.
+8. **Slicing check**: before writing each sub, ask "can this realistically close by end of week?". If not, split it smaller or defer.
 
 ### Leader's own week
 

@@ -20,9 +20,13 @@ For each:
   - review → conclusion, follow-ups
   - simple/repeating → no note
   Notes go as checkbox-less bullet beneath the leaf.
-- **Partial**: drop `@today`. Ask "can today's part be split off?".
-  - If yes: insert sub-leaves; today's part as `[x] @done({date})`, remainder as `[ ]`.
-  - If no: keep leaf, log progress as note bullet.
+- **Partial**: drop `@today`. Check for carry-over: scan `log/w{N-1}.md` for the same leaf text as `[ ]` (unchecked). If found, this leaf has carried over at least 2 weeks.
+  - **Carry-over detected (2+ weeks)** — force-split attempt:
+    - "This task carried over from last week. Let's split off what's actually completable this week."
+    - Propose a concrete sub-split. Require the user to either accept a split or provide an explicit reason why it can't be split: (a) external dependency blocking, (b) single atomic unit — cannot divide, (c) unplanned inflow displaced it. Add chosen reason as note bullet.
+  - **No carry-over** — standard flow: ask "can today's part be split off?".
+    - If yes: insert sub-leaves; today's part as `[x] @done({date})`, remainder as `[ ]`.
+    - If no: keep leaf, log progress as note bullet.
 - **Missed**: drop `@today`, capture reason as a note if useful.
 
 ### Auto-check parents

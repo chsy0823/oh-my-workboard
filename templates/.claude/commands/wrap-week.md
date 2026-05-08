@@ -2,6 +2,56 @@
 
 Run on the last working day of the week or just before next week's `/plan-week`. Gated by `team.yaml:leader`.
 
+## Pre-read — Synthesize week before asking anything
+
+Before presenting any numbers or asking any questions, read all data sources and build a complete picture. The leader should not need to remember anything — Claude derives the state from files.
+
+Read in this order:
+1. `board/status.md` — this week's team goals and sub-checklist (`[ ]`/`[x]` state).
+2. All `people/*.md` — each member's workboard tree: completed, partial, missed, carry-overs, `@block`/`@wait` tags.
+3. All `projects/*/milestones.md` — current milestone sub states.
+4. `log/w{N-1}.md` — last week's snapshot (for milestone delta calculation and carry-over detection).
+5. `board/requests.md` — stale ping-pongs, past-due items.
+6. `board/blockers.md` — open team blockers.
+7. `board/velocity.md` — last 4 rows for trend.
+
+Then present a synthesized summary before Step 0:
+
+```
+📊 W{N} snapshot (pre-sync)
+
+Per member:
+  @{user}: {done}/{total} top-levels done — carry-overs: {list} — blocks: {list}
+  ...
+
+Team-plan subs: {done}/{total} ({pct}%)
+Milestone movement vs last week:
+  {project} M{N}: {done_delta} new subs completed
+  ...
+Stale ping-pongs: {N} | Past-due: {N} | Open blockers: {N}
+
+⚠ Flags:
+  - {user} has {leaf} carrying over 2+ weeks
+  - M{N} deadline in {N} weeks, {N} subs still open
+  ...
+```
+
+Ask: "Does this match your read of the week? Anything to correct before sync?" Then proceed to Step 0.
+
+## Step 0 — Pre-metrics sync check
+
+Before calculating any numbers, verify data sources are in sync. Dirty inputs → wrong metrics.
+
+1. **Workboard ↔ status.md drift**: for each `  - [ ] @{user}: {text}` sub in `board/status.md`, text-match against the same user's `people/{id}.md` top-level leaf. If the workboard leaf is `[x]` but the status sub is still `[ ]`, flag it.
+   - Collect all drift items: "These completions not yet in status.md — flip them? [Y/n]"
+   - On confirm, flip those subs to `[x]`.
+
+2. **Milestones check**: scan `projects/*/milestones.md` for sub-items that look complete based on workboard outcomes but are still `[ ]`. Surface candidates one by one for confirmation.
+
+3. **Sync commit**: if anything changed, commit `[board] pre-wrap sync W{N}` before proceeding.
+
+Ask: "Sync done — ready to calculate metrics? [Y/n]"
+
 ## Step 1 — Quantitative wrap-up (auto-presented)
 
 Show the leader these numbers in one block, then wait for "OK":
