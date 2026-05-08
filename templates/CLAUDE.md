@@ -26,9 +26,13 @@ The team leader is `{{LEADER_ID}}`. The leader can edit any teammate's workboard
 6. Think from the receiver's perspective for any cross-team artifact.
 7. If receiver context is incomplete, ask once (batched) before recording.
 
-## Data model — see the `workboard-model` skill
+## Data model — see the `workboard-model` skills
 
-The full data-model contract (tree format, parsing rules, file formats, lint invariants R1–R8, request categories, status-board sub-checklist semantics, velocity table, etc.) lives in the `workboard-model` skill (`.claude/skills/workboard-model/SKILL.md`). Claude Code auto-loads it when format/spec questions arise or when validation is needed.
+Two focused skills cover the data-model contract:
+- **`workboard-file-formats`** (`.claude/skills/workboard-model/file-formats.md`) — all file schemas (people, requests, backlog, status, velocity, milestones). Load when reading/writing board files or building new commands.
+- **`workboard-lint-invariants`** (`.claude/skills/workboard-model/lint-invariants.md`) — R1–R8 invariants and parsing regexes. Load when debugging lint or adding validators.
+
+Tree format, reserved tags, and anti-patterns are summarized inline below — no skill needed for daily operations.
 
 Quick reference for everyday operations:
 
@@ -61,7 +65,7 @@ A request in `requests.md` does NOT also appear as a leaf on the receiver's work
 - `projects/{name}/{overview,milestones,streams}.md` + `decisions/`
 - `log/{YYYY-MM-DD}.md`, `log/w{N}.md`, `log/w{N}-retro.md`
 
-For request categories, ping-pong state tags, status-board format, velocity table format, and lint rules, consult the `workboard-model` skill.
+For request categories, ping-pong state tags, status-board format, velocity table format, and lint rules, consult the `workboard-file-formats` or `workboard-lint-invariants` skill.
 
 ## Session start
 

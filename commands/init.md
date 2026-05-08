@@ -85,7 +85,8 @@ From `${CLAUDE_PLUGIN_ROOT}/templates/`, copy these to the task repo verbatim:
 - `.claude/settings.json`
 - `.claude/hooks/{check-permissions,remind-commit,lint-workboard,uncommitted-reminder}.sh` → set executable bits
 - `.claude/commands/{start-day,end-day,start-week,plan-week,wrap-week}.md` (project-local copies of the ritual flows)
-- `.claude/skills/workboard-model/SKILL.md`
+- `.claude/skills/workboard-model/file-formats.md`
+- `.claude/skills/workboard-model/lint-invariants.md`
 - `scripts/setup.sh` → executable
 - `scripts/lint-workboard.js` → executable
 - `scripts/session-brief.js` → executable

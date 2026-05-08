@@ -147,7 +147,7 @@ A personal workboard (`people/{id}.md`) is **a single tree**:
 
 Reserved tags: `@today`, `@done(YYYY-MM-DD)`, `@wait(reason)`, `@block(reason)`, `@handoff(user: action)`. Cross-member dependencies go to `board/requests.md` only — never `@wait(user:...)`.
 
-Full data-model contract is in `templates/.claude/skills/workboard-model/SKILL.md` (auto-loaded inside task repos). Lint enforces invariants R1–R8 on every workboard edit.
+File schemas live in `templates/.claude/skills/workboard-model/file-formats.md`; lint invariants R1–R8 in `lint-invariants.md`. Both are lazy-loaded skills inside task repos. Tree format and tags are summarized inline in the task repo's `CLAUDE.md`.
 
 ## Repository structure
 

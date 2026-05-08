@@ -20,7 +20,7 @@ Print sections (each with ✓ or ✗):
    - PostToolUse hooks present (lint-workboard.sh, remind-commit.sh)
    - PreToolUse hooks present (check-permissions.sh)
    - All hook scripts present and executable
-7. **Skills**: `.claude/skills/workboard-model/SKILL.md` exists.
+7. **Skills**: `.claude/skills/workboard-model/file-formats.md` and `lint-invariants.md` exist.
 8. **Slack** (if configured): each `SLACK_ID_{id}` env in workflows resolves; `SLACK_WEBHOOK_URL` secret exists (or report unset).
 9. **Lint**: run `node scripts/lint-workboard.js --quiet` and report errors / warnings count.
 10. **Legacy format**: scan `people/*.md` for old-style sections (`## In Progress`, `## Waiting`, etc.); flag any.
