@@ -7,7 +7,7 @@ echo "==============="
 
 echo "[1/3] Configuring git hooks..."
 git config core.hooksPath .githooks
-echo "  ok: commit-msg + pre-push wired"
+echo "  ok: pre-commit (lint) + commit-msg + pre-push wired"
 
 echo "[2/3] Checking git user.name..."
 GIT_USER="$(git config user.name 2>/dev/null || echo "")"

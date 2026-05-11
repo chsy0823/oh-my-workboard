@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Workboard lint gate — blocks commits with data-model violations.
+# Activated automatically via: git config core.hooksPath .githooks (run scripts/setup.sh)
+
+set -u
+
+if ! command -v node >/dev/null 2>&1; then
+  echo "[workboard-lint] node not found — skipping pre-commit lint." >&2
+  exit 0
+fi
+
+OUTPUT=$(node scripts/lint-workboard.js --errors-only --quiet 2>&1)
+RC=$?
+
+if [ "$RC" -ne 0 ]; then
+  echo "" >&2
+  echo "[workboard-lint] Commit blocked — fix these violations first:" >&2
+  echo "$OUTPUT" >&2
+  echo "" >&2
+  echo "  Emergency bypass: git commit --no-verify  (use sparingly)" >&2
+  exit 1
+fi
+
+exit 0
